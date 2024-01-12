@@ -11,12 +11,16 @@ namespace MagicVilla.Data
                 new VillaDTO
                 {
                     Name = "Pool View",
-                    Id = 1
+                    Id = 1,
+                    sqft = 100,
+                    Occupancy = 4,
                 },
                 new VillaDTO
                 {
                     Name = "Beach View",
-                    Id = 2
+                    Id = 2,
+                    sqft = 300,
+                    Occupancy = 3
                 }
         };
 	}
