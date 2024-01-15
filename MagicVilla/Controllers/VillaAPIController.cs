@@ -1,6 +1,8 @@
 ﻿using MagicVilla.Data;
+using MagicVilla.Logging;
 using MagicVilla.Models;
 using MagicVilla.Models.Dto;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MagicVilla.Controllers
@@ -9,9 +11,18 @@ namespace MagicVilla.Controllers
 	[ApiController]
 	public class VillaAPIController : ControllerBase
 	{
+
+		private readonly ILogging logger;
+
+        public VillaAPIController(ILogging _logger)
+        {
+            this.logger = _logger;
+        }
+
 		[HttpGet]
 		public ActionResult<IEnumerable<VillaDTO>> GetVillas()
 		{
+			logger.Log("Getting all villa", "");
 			return Ok( VillaStore.villaList );
 		}
 
@@ -22,8 +33,9 @@ namespace MagicVilla.Controllers
         public ActionResult<VillaDTO> GetVillas(int id)
         {
 			if(id == 0)
-			{
-				return BadRequest();
+            {
+                logger.Log("Get villa error with id " + id, "error");
+                return BadRequest();
 			}
 			var villa = VillaStore.villaList.FirstOrDefault(c => c.Id == id);
 			if(villa == null)
@@ -44,7 +56,7 @@ namespace MagicVilla.Controllers
 				return BadRequest(villaDTO);
 			}
 
-			if(VillaStore.villaList.FirstOrDefault(c => c.Name.ToLower() == villaDTO.Name.ToLower()) != null )
+			if( VillaStore.villaList.FirstOrDefault(c => c.Name.ToLower() == villaDTO.Name.ToLower()) != null )
 			{
 				ModelState.AddModelError("CustomError", "Villa name already exist");
 				return BadRequest(ModelState);
@@ -104,6 +116,33 @@ namespace MagicVilla.Controllers
             villa.Name = villaDTO.Name;
 			villa.sqft = villaDTO.sqft;
 			villa.Occupancy = villaDTO.Occupancy;
+
+			return NoContent();
+		}
+
+		[HttpPatch("{id:int}", Name = "UpdatePartialVilla")]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public IActionResult UpdatePartialVilla (int id, JsonPatchDocument<VillaDTO> patchDto)
+		{
+			if(id == 0 || patchDto == null)
+			{
+				return BadRequest();
+			}
+
+			var villa = VillaStore.villaList.FirstOrDefault(c => c.Id == id);
+
+			if(villa == null)
+			{
+				return NotFound();
+			}
+
+			patchDto.ApplyTo(villa, ModelState);
+
+			if (!ModelState.IsValid)
+			{
+				return BadRequest();
+			}
 
 			return NoContent();
 		}
